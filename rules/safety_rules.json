@@ -1,0 +1,316 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstructionSiteSafetyRuleset",
+  "version": "1.0.0",
+  "description": "Production safety ruleset for construction site PPE and hazard compliance monitoring. Each rule defines a detectable violation condition, its severity, and the zones where it applies.",
+  "metadata": {
+    "created": "2026-04-01",
+    "standard_references": [
+      "OSHA 29 CFR 1926 — Safety and Health Regulations for Construction",
+      "ANSI/ISEA Z89.1 — Industrial Head Protection",
+      "ANSI/ISEA 107 — High-Visibility Safety Apparel",
+      "EN 361 / ANSI Z359.1 — Full Body Harness Standards"
+    ],
+    "confidence_thresholds": {
+      "detection_minimum": 0.35,
+      "compliance_assertion": 0.55,
+      "high_confidence": 0.80
+    }
+  },
+  "zone_definitions": {
+    "ALL": "Entire monitored construction site area",
+    "ACTIVE_ZONE": "Areas with active construction work (excavation, framing, concrete pour)",
+    "HEIGHT_ZONE": "Any work surface or scaffold ≥ 2 meters above ground level",
+    "MACHINERY_ZONE": "Areas within 5-meter radius of operating heavy machinery (cranes, excavators, forklifts)"
+  },
+  "severity_levels": {
+    "CRITICAL": {
+      "response_time": "immediate",
+      "description": "Imminent danger of fatal injury. Requires immediate work stoppage and intervention.",
+      "notification": ["site_supervisor", "safety_officer", "emergency_response"],
+      "escalation_delay_seconds": 0
+    },
+    "HIGH": {
+      "response_time": "< 5 minutes",
+      "description": "Significant injury risk. Worker must be alerted and corrective action taken before work continues.",
+      "notification": ["site_supervisor", "safety_officer"],
+      "escalation_delay_seconds": 300
+    },
+    "MEDIUM": {
+      "response_time": "< 15 minutes",
+      "description": "Moderate risk. Worker should be notified and compliance restored at next safe stopping point.",
+      "notification": ["site_supervisor"],
+      "escalation_delay_seconds": 900
+    },
+    "LOW": {
+      "response_time": "< 1 hour",
+      "description": "Minor compliance issue. Log for review and address during next safety briefing.",
+      "notification": ["safety_log"],
+      "escalation_delay_seconds": 3600
+    }
+  },
+  "rules": [
+    {
+      "rule_id": "PPE-001",
+      "rule_name": "Hard Hat Required",
+      "description": "Every worker on an active construction site must wear a properly fitted safety helmet (hard hat) at all times. The helmet must be visible on the worker's head; carrying it or wearing it backwards does not constitute compliance.",
+      "detection_targets": [
+        "worker",
+        "helmet",
+        "no_helmet"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "no_helmet", "state": "detected", "min_confidence": 0.45 },
+              { "target": "helmet", "state": "not_detected", "within_bbox": "worker", "expansion_factor": 0.3 }
+            ]
+          }
+        ]
+      },
+      "severity": "CRITICAL",
+      "zone_applicability": "ALL",
+      "suggested_action": "Immediately provide the worker with a safety helmet. Do not allow work to continue without head protection.",
+      "osha_reference": "29 CFR 1926.100"
+    },
+    {
+      "rule_id": "PPE-002",
+      "rule_name": "High-Visibility Vest Required",
+      "description": "Workers in active construction zones must wear high-visibility (hi-vis) vests or jackets meeting Class 2 or Class 3 visibility standards. The vest must be fully worn and fastened.",
+      "detection_targets": [
+        "worker",
+        "vest",
+        "no_vest"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "no_vest", "state": "detected", "min_confidence": 0.45 },
+              { "target": "vest", "state": "not_detected", "within_bbox": "worker", "expansion_factor": 0.2 }
+            ]
+          }
+        ]
+      },
+      "severity": "HIGH",
+      "zone_applicability": "ACTIVE_ZONE",
+      "suggested_action": "Provide the worker with a high-visibility vest and ensure it is properly fastened before resuming work.",
+      "osha_reference": "29 CFR 1926.201"
+    },
+    {
+      "rule_id": "PPE-003",
+      "rule_name": "Safety Harness at Height",
+      "description": "Workers operating at heights ≥ 2 meters above ground level (scaffolds, rooftops, elevated platforms) must wear a full-body safety harness connected to a secure anchor point. Visual cues for height include scaffolding, ladders, elevated platforms, and roof edges.",
+      "detection_targets": [
+        "worker",
+        "harness",
+        "danger_zone"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          { "target": "worker", "context": "height_zone_detected", "height_indicators": ["scaffold", "elevated_platform", "roof_edge", "ladder_above_2m"] },
+          { "target": "harness", "state": "not_detected", "within_bbox": "worker", "expansion_factor": 0.3 }
+        ]
+      },
+      "severity": "CRITICAL",
+      "zone_applicability": "HEIGHT_ZONE",
+      "suggested_action": "Immediately halt elevated work. Worker must don a full-body harness and secure the lanyard to an approved anchor point before continuing.",
+      "osha_reference": "29 CFR 1926.502"
+    },
+    {
+      "rule_id": "PPE-004",
+      "rule_name": "Improper Helmet Usage",
+      "description": "A detected hard hat must be properly seated on the worker's head. Helmets carried in hand, hung on belts, worn backwards (unless manufacturer-approved), or placed on surfaces near the worker constitute improper usage.",
+      "detection_targets": [
+        "worker",
+        "helmet"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          { "target": "helmet", "state": "detected", "min_confidence": 0.40 },
+          { "target": "helmet", "spatial_relation": "not_on_head", "head_region": "top_20_percent_of_worker_bbox" }
+        ]
+      },
+      "severity": "HIGH",
+      "zone_applicability": "ALL",
+      "suggested_action": "Instruct the worker to properly place and secure the hard hat on their head before continuing any site activity.",
+      "osha_reference": "29 CFR 1926.100(b)"
+    },
+    {
+      "rule_id": "PPE-005",
+      "rule_name": "Improperly Worn Vest",
+      "description": "A high-visibility vest must be fully worn with closures fastened. A vest that is unzipped, unbuttoned, draped over shoulders without arm insertion, or tied around the waist does not meet compliance.",
+      "detection_targets": [
+        "worker",
+        "vest"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          { "target": "vest", "state": "detected", "min_confidence": 0.40 },
+          { "target": "vest", "attribute": "open_or_improperly_worn", "classifier_required": true }
+        ]
+      },
+      "severity": "MEDIUM",
+      "zone_applicability": "ACTIVE_ZONE",
+      "suggested_action": "Ask the worker to fully fasten/zip the high-visibility vest to ensure 360° visibility.",
+      "osha_reference": "ANSI/ISEA 107-2020 Section 5"
+    },
+    {
+      "rule_id": "PROX-001",
+      "rule_name": "Machinery Proximity Without Full PPE",
+      "description": "Workers within a 5-meter radius of operating heavy machinery (cranes, excavators, forklifts, loaders) must have COMPLETE PPE: hard hat + hi-vis vest at minimum. Missing any single item in the machinery zone is a critical violation.",
+      "detection_targets": [
+        "worker",
+        "helmet",
+        "no_helmet",
+        "vest",
+        "no_vest",
+        "machinery"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          { "target": "machinery", "state": "detected", "min_confidence": 0.40 },
+          { "target": "worker", "proximity_to": "machinery", "max_distance_ratio": 0.25, "note": "Euclidean distance between bbox centers < 25% of frame diagonal" },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "helmet", "state": "not_detected", "within_bbox": "worker" },
+              { "target": "vest", "state": "not_detected", "within_bbox": "worker" },
+              { "target": "no_helmet", "state": "detected" },
+              { "target": "no_vest", "state": "detected" }
+            ]
+          }
+        ]
+      },
+      "severity": "CRITICAL",
+      "zone_applicability": "MACHINERY_ZONE",
+      "suggested_action": "Immediately move the worker to a safe distance from the machinery. Enforce full PPE (hard hat + hi-vis vest) before allowing re-entry into the machinery zone.",
+      "osha_reference": "29 CFR 1926.600"
+    },
+    {
+      "rule_id": "POST-001",
+      "rule_name": "Fall Risk Posture Anomaly",
+      "description": "Workers exhibiting posture patterns consistent with fall risk: leaning beyond 45° from vertical, crouching near unguarded edges, climbing without three-point contact, or lying on elevated surfaces. This rule is supplementary and typically requires pose estimation data.",
+      "detection_targets": [
+        "worker",
+        "danger_zone"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "worker", "posture": "severe_lean", "lean_angle_threshold": 45 },
+              { "target": "worker", "posture": "prone_or_supine", "on_elevated_surface": true },
+              { "target": "worker", "bbox_aspect_ratio": "width > 1.5 * height", "note": "Horizontal orientation suggests fallen or dangerously leaning worker" },
+              { "target": "worker", "proximity_to": "danger_zone", "max_distance_ratio": 0.05 }
+            ]
+          }
+        ]
+      },
+      "severity": "HIGH",
+      "zone_applicability": "HEIGHT_ZONE",
+      "suggested_action": "Dispatch safety personnel to assess the worker's condition immediately. If at height, initiate fall rescue protocol.",
+      "osha_reference": "29 CFR 1926.501"
+    },
+    {
+      "rule_id": "PPE-006",
+      "rule_name": "Complete PPE Ensemble in Active Zone",
+      "description": "Workers in designated active construction zones must wear the complete required PPE ensemble: hard hat AND hi-vis vest simultaneously. Partial compliance is still a violation.",
+      "detection_targets": [
+        "worker",
+        "helmet",
+        "no_helmet",
+        "vest",
+        "no_vest"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.45 },
+          { "target": "worker", "context": "in_active_zone" },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "helmet", "state": "not_detected", "within_bbox": "worker" },
+              { "target": "vest", "state": "not_detected", "within_bbox": "worker" }
+            ]
+          }
+        ]
+      },
+      "severity": "HIGH",
+      "zone_applicability": "ACTIVE_ZONE",
+      "suggested_action": "Ensure the worker is equipped with both hard hat and hi-vis vest before allowing entry into the active construction zone.",
+      "osha_reference": "29 CFR 1926.28(a)"
+    },
+    {
+      "rule_id": "SCENE-001",
+      "rule_name": "Unauthorized Danger Zone Entry",
+      "description": "Non-PPE-equipped individuals (visitors, passersby, unauthorized personnel) detected within marked danger zones. Any person without minimum PPE (hard hat) inside a danger zone boundary is a violation.",
+      "detection_targets": [
+        "worker",
+        "helmet",
+        "no_helmet",
+        "danger_zone"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "worker", "state": "detected", "min_confidence": 0.40 },
+          { "target": "danger_zone", "state": "detected", "min_confidence": 0.35 },
+          { "target": "worker", "spatial_relation": "inside", "reference": "danger_zone" },
+          { "target": "helmet", "state": "not_detected", "within_bbox": "worker" }
+        ]
+      },
+      "severity": "CRITICAL",
+      "zone_applicability": "ALL",
+      "suggested_action": "Immediately escort the individual out of the danger zone. Verify authorization and provide required PPE before allowing re-entry.",
+      "osha_reference": "29 CFR 1926.200"
+    },
+    {
+      "rule_id": "ENV-001",
+      "rule_name": "Low Visibility Working Conditions",
+      "description": "Scene-level rule: when ambient lighting is insufficient (mean frame brightness < 60/255), all detected workers MUST have hi-vis vests. This rule upgrades vest violations from HIGH to CRITICAL severity in low-light conditions.",
+      "detection_targets": [
+        "worker",
+        "vest",
+        "no_vest"
+      ],
+      "violation_condition": {
+        "logic": "AND",
+        "conditions": [
+          { "target": "scene", "attribute": "mean_brightness", "threshold_below": 60 },
+          { "target": "worker", "state": "detected", "min_confidence": 0.40 },
+          {
+            "logic": "OR",
+            "conditions": [
+              { "target": "no_vest", "state": "detected" },
+              { "target": "vest", "state": "not_detected", "within_bbox": "worker" }
+            ]
+          }
+        ]
+      },
+      "severity": "CRITICAL",
+      "zone_applicability": "ALL",
+      "suggested_action": "In low-visibility conditions, hi-vis vests are MANDATORY for all personnel. Halt work until all workers have proper high-visibility apparel.",
+      "osha_reference": "29 CFR 1926.56"
+    }
+  ]
+}
