@@ -71,7 +71,7 @@ def run_detection_evaluation(model: YOLO, args: argparse.Namespace) -> dict:
     Returns:
         Dict with mAP values and per-class AP.
     """
-    print("\n📊 Running detection evaluation...")
+    print("\n Running detection evaluation...")
     metrics = model.val(data=args.data, imgsz=args.imgsz,
                         conf=args.conf, iou=args.iou,
                         device=args.device, plots=True)
@@ -105,7 +105,7 @@ def measure_inference_speed(
     Returns:
         Average FPS.
     """
-    print(f"\n⏱️  Measuring inference speed ({args.fps_frames} frames)...")
+    print(f"\n Measuring inference speed ({args.fps_frames} frames)...")
     dummy = np.random.randint(0, 255, (args.imgsz, args.imgsz, 3), dtype=np.uint8)
 
     # Warmup
@@ -173,7 +173,7 @@ def format_results_table(
     ]
 
     map50 = det_metrics["mAP50"]
-    map_status = "✅" if map50 >= BENCHMARKS["mAP@0.5"] else "❌"
+    map_status = "PASS" if map50 >= BENCHMARKS["mAP@0.5"] else "FAIL"
     lines.append(f"  {'mAP@0.5':<25} {map50:>10.4f} {'>= 0.72':>12} {map_status:>8}")
     lines.append(f"  {'mAP@0.5:0.95':<25} {det_metrics['mAP50_95']:>10.4f}")
 
@@ -186,18 +186,18 @@ def format_results_table(
     lines.append(f"  {'─' * 25} {'─' * 10} {'─' * 12} {'─' * 8}")
 
     vdr = safety_metrics.get("VDR", 0)
-    vdr_s = "✅" if vdr >= BENCHMARKS["VDR"] else "❌"
+    vdr_s = "PASS" if vdr >= BENCHMARKS["VDR"] else "FAIL"
     lines.append(f"  {'VDR':<25} {vdr:>10.4f} {'>= 0.85':>12} {vdr_s:>8}")
 
     cmr = safety_metrics.get("CMR", 0)
-    cmr_s = "✅" if cmr <= BENCHMARKS["CMR_max"] else "❌"
+    cmr_s = "PASS" if cmr <= BENCHMARKS["CMR_max"] else "FAIL"
     lines.append(f"  {'CMR':<25} {cmr:>10.4f} {'<= 0.08':>12} {cmr_s:>8}")
 
     far = safety_metrics.get("FAR", 0)
-    far_s = "✅" if far <= BENCHMARKS["FAR_max"] else "❌"
+    far_s = "PASS" if far <= BENCHMARKS["FAR_max"] else "FAIL"
     lines.append(f"  {'FAR':<25} {far:>10.4f} {'<= 0.15':>12} {far_s:>8}")
 
-    fps_s = "✅" if fps >= BENCHMARKS["FPS_min"] else "❌"
+    fps_s = "PASS" if fps >= BENCHMARKS["FPS_min"] else "FAIL"
     lines.append(f"  {'Inference FPS':<25} {fps:>10.1f} {'>= 15':>12} {fps_s:>8}")
 
     lines.append("=" * 65)
@@ -217,7 +217,7 @@ def main() -> None:
 
     # Safety metrics need ground-truth violation annotations.
     # Provide placeholder values; replace with real annotation comparison.
-    print("\n📌 REQUIRES: Ground-truth violation annotations for VDR/FAR/CMR.")
+    print("\n REQUIRES: Ground-truth violation annotations for VDR/FAR/CMR.")
     print("   Using placeholder values. Replace with your test set evaluation.")
     safety_metrics = compute_safety_metrics(
         tp_violations=0, fp_violations=0, fn_violations=0,
@@ -234,7 +234,7 @@ def main() -> None:
     with open(out / "eval_results.txt", "w") as f:
         f.write(table)
 
-    print(f"\n✅ Results saved to {out}/")
+    print(f"\nResults saved to {out}/")
 
 
 if __name__ == "__main__":
