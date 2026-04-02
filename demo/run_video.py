@@ -7,6 +7,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 import time
 from datetime import datetime
@@ -38,6 +39,17 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--max-frames", type=int, default=0, help="Max frames (0=all).")
     p.add_argument("--skip-frames", type=int, default=1, help="Process every Nth frame.")
+    p.add_argument(
+        "--reports-dir",
+        type=str,
+        default="reports",
+        help="Directory for generated report artifacts.",
+    )
+    p.add_argument(
+        "--save-frame-json",
+        action="store_true",
+        help="Save per-frame JSON reports in addition to CSV and shift summary.",
+    )
     p.add_argument("--no-display", action="store_true")
     return p.parse_args()
 
@@ -75,19 +87,20 @@ def main() -> None:
     source = int(args.source) if args.source.isdigit() else args.source
     cap = cv2.VideoCapture(source)
     if not cap.isOpened():
-        print(f"❌ Cannot open: {args.source}")
+        print(f"ERROR: Cannot open source: {args.source}")
         sys.exit(1)
 
     fps_in = cap.get(cv2.CAP_PROP_FPS) or 30
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(f"📹 Source: {args.source} ({w}x{h} @ {fps_in:.1f} FPS, {total} frames)")
+    print(f"Source: {args.source} ({w}x{h} @ {fps_in:.1f} FPS, {total} frames)")
+    print(f"Device: {device}")
 
     # Init pipeline
     detector = SafetyDetector(args.model, confidence_threshold=args.conf, device=device)
     engine = ComplianceEngine.from_json(args.rules)
-    reporter = ReportGenerator()
+    reporter = ReportGenerator(output_dir=args.reports_dir)
     visualizer = SafetyVisualizer()
     aggregator = ShiftAggregator()
 
@@ -125,6 +138,9 @@ def main() -> None:
                         "brightness": result.frame_brightness}
             report = engine.evaluate(states, metadata)
             aggregator.add_report(report)
+            reporter.append_csv(report)
+            if args.save_frame_json:
+                reporter.save_json(report, f"{report.frame_id}.json")
 
             annotated = visualizer.draw_frame(
                 frame, states, report, result.danger_zones, result.machinery)
@@ -150,18 +166,24 @@ def main() -> None:
         cv2.destroyAllWindows()
 
     elapsed = time.perf_counter() - start_time
-    print(f"\n✅ Processed {processed} frames in {elapsed:.1f}s ({processed/elapsed:.1f} FPS)")
+    print(f"\nProcessed {processed} frames in {elapsed:.1f}s ({processed/elapsed:.1f} FPS)")
 
-    # Print shift summary
+    # Print and save shift summary
     summary = aggregator.get_summary()
-    print(f"\n📊 Shift Summary:")
+    print("\nShift Summary:")
     print(f"  Frames: {summary.get('total_frames', 0)}")
     print(f"  Unsafe frames: {summary.get('unsafe_frames', 0)} "
           f"({summary.get('unsafe_rate', 0):.1%})")
     print(f"  Total violations: {summary.get('total_violations', 0)}")
 
+    summary_path = Path(args.reports_dir) / "shift_summary.json"
+    with open(summary_path, "w", encoding="utf-8") as summary_file:
+        json.dump(summary, summary_file, indent=2)
+    print(f"Report summary saved: {summary_path}")
+    print(f"Report CSV saved: {Path(args.reports_dir) / 'compliance_log.csv'}")
+
     if args.output:
-        print(f"💾 Saved: {args.output}")
+        print(f"Output video saved: {args.output}")
 
 
 if __name__ == "__main__":
