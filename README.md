@@ -67,7 +67,7 @@ Instead of hardcoding safety logic into the model, SiteSafe utilizes a decoupled
 
 ### Setup
 ```bash
-git clone <your-repo-link>
+git clone https://github.com/ShakyaDissanayake/SiteSafe
 cd SiteSafe
 pip install -r requirements.txt
 ```
