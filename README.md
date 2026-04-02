@@ -1,4 +1,4 @@
-# 🚧 SiteSafe: Construction Safety Monitor
+# SiteSafe: Construction Safety Monitor
 
 ![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)
 ![YOLOv8](https://img.shields.io/badge/YOLO-v8-yellow.svg)
@@ -8,7 +8,7 @@
 
 ---
 
-## 🎯 The Core Question: Is this situation safe or unsafe?
+## The Core Question: Is this situation safe or unsafe?
 
 SiteSafe answers this by breaking the problem into four continuous stages:
 1. **Worker Detection:** Locating individuals within the frame.
@@ -18,7 +18,7 @@ SiteSafe answers this by breaking the problem into four continuous stages:
 
 ---
 
-## 📚 Dataset Documentation & Curation
+## Dataset Documentation & Curation
 
 This project utilizes the [Ultralytics Construction-PPE Dataset](https://docs.ultralytics.com/datasets/detect/construction-ppe/), a comprehensive dataset specifically formulated for safety monitoring in construction environments. It provides high-quality images with bounding box annotations for workers and their protective equipment.
 
@@ -47,7 +47,7 @@ To ensure robustness across varied real-world environments, this model was train
 
 ---
 
-## 🛡️ Defining Safety Violations (Rule Engine)
+## Defining Safety Violations (Rule Engine)
 
 Instead of hardcoding safety logic into the model, SiteSafe utilizes a decoupled, zone-aware JSON rule engine (`rules/safety_rules.json`). This allows safety officers to configure rules without retraining the model.
 
@@ -63,7 +63,7 @@ Instead of hardcoding safety logic into the model, SiteSafe utilizes a decoupled
 
 ---
 
-## 🧠 System Architecture & Design Decisions
+## System Architecture & Design Decisions
 
 - **Architecture Choice (YOLOv8):** Selected for its industry-leading balance of real-time inference speed (essential for live video feeds) and detection accuracy.
 - **Low-Light Preprocessing:** Integrates optional CLAHE (Contrast Limited Adaptive Histogram Equalization) to handle shadows and poor indoor artificial lighting.
@@ -72,7 +72,7 @@ Instead of hardcoding safety logic into the model, SiteSafe utilizes a decoupled
 
 ---
 
-## 🚀 Installation & Quick Start
+## Installation & Quick Start
 
 ### Prerequisites
 - Python >= 3.13
@@ -98,7 +98,7 @@ python -m demo.run_video --source data/raw/video.mp4 --output result.mp4 --save-
 
 ---
 
-## 🏋️ Training & Evaluation
+## Training & Evaluation
 
 To reproduce the model training using the custom YAML configuration:
 
@@ -115,7 +115,7 @@ python evaluation/evaluate.py --data training/construction_safety.yaml
 
 ---
 
-## 📊 Evaluation & Known Limitations
+## Evaluation & Known Limitations
 
 **Where the model excels:**
 - Real-time performance suitable for multi-camera site deployments.
@@ -129,7 +129,7 @@ python evaluation/evaluate.py --data training/construction_safety.yaml
 
 ---
 
-## � Future Directions
+## Future Directions
 
 1. **TensorRT Optimization:** Export the YOLO model to TensorRT to maximize inference speed and optimize for edge compute.
 2. **Edge Deployment:** Deploy the pipeline directly onto edge AI hardware such as the NVIDIA Jetson Xavier or NVIDIA Jetson Orin for decentralized, on-site processing.
@@ -138,5 +138,5 @@ python evaluation/evaluate.py --data training/construction_safety.yaml
 
 ---
 
-## �📄 License
+## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
