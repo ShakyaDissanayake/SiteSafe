@@ -102,7 +102,7 @@ python evaluation/evaluate.py --data training/construction_safety.yaml
 
 ---
 
-## 📊 Honest Evaluation & Known Limitations
+## 📊 Evaluation & Known Limitations
 
 **Where the model excels:**
 - Real-time performance suitable for multi-camera site deployments.
