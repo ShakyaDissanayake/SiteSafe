@@ -6,7 +6,7 @@ manual review by safety engineers.
 
 Usage:
     python failure_analysis.py \
-        --model best.pt \
+    --model artifacts/best.pt \
         --images-dir data/processed/images/test \
         --labels-dir data/processed/labels/test \
         --output ./failure_report \
@@ -23,13 +23,15 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
+DEFAULT_MODEL_PATH = "artifacts/best.pt"
+
 CLASS_NAMES = {0: "worker", 1: "helmet", 2: "no_helmet", 3: "vest",
                4: "no_vest", 5: "harness", 6: "machinery", 7: "danger_zone"}
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Failure case analysis.")
-    p.add_argument("--model", required=True, help="Model weights path.")
+    p.add_argument("--model", default=DEFAULT_MODEL_PATH, help="Model weights path.")
     p.add_argument("--images-dir", required=True, help="Test images directory.")
     p.add_argument("--labels-dir", required=True, help="Test labels directory.")
     p.add_argument("--output", default="./failure_report", help="Output dir.")

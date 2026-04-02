@@ -27,11 +27,11 @@ class TestPPEAssociation:
     def _stub(self):
         class DetectorStub:
             associate_ppe_to_workers = SafetyDetector.associate_ppe_to_workers
-            _build_worker_state = SafetyDetector._build_worker_state
-            _assign_ppe_items = SafetyDetector._assign_ppe_items
-            _check_machinery_proximity = SafetyDetector._check_machinery_proximity
-            _check_danger_zones = SafetyDetector._check_danger_zones
-            _assess_visibility = SafetyDetector._assess_visibility
+            _build_worker_state = staticmethod(SafetyDetector._build_worker_state)
+            _assign_ppe_items = staticmethod(SafetyDetector._assign_ppe_items)
+            _check_machinery_proximity = staticmethod(SafetyDetector._check_machinery_proximity)
+            _check_danger_zones = staticmethod(SafetyDetector._check_danger_zones)
+            _assess_visibility = staticmethod(SafetyDetector._assess_visibility)
 
         return DetectorStub()
 

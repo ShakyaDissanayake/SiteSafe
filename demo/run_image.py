@@ -1,8 +1,8 @@
 """Run safety inference on a single image.
 
 Usage:
-    python -m demo.run_image --model best.pt --image photo.jpg
-    python -m demo.run_image --model best.pt --image photo.jpg --output result.jpg --rules rules/safety_rules.json
+    python -m demo.run_image --image photo.jpg
+    python -m demo.run_image --model artifacts/best.pt --image photo.jpg --output result.jpg --rules rules/safety_rules.json
 """
 
 import argparse
@@ -21,9 +21,12 @@ from inference.reporter import ReportGenerator
 from inference.visualizer import SafetyVisualizer
 
 
+DEFAULT_MODEL_PATH = "artifacts/best.pt"
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Run safety detection on an image.")
-    p.add_argument("--model", required=True, help="Path to YOLO weights.")
+    p.add_argument("--model", default=DEFAULT_MODEL_PATH, help="Path to YOLO weights.")
     p.add_argument("--image", required=True, help="Input image path.")
     p.add_argument("--output", default=None, help="Output annotated image path.")
     p.add_argument("--rules", default="rules/safety_rules.json", help="Safety rules JSON.")

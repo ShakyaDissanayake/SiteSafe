@@ -1,9 +1,9 @@
 """Run safety inference on a video file or webcam stream.
 
 Usage:
-    python -m demo.run_video --model best.pt --source video.mp4
-    python -m demo.run_video --model best.pt --source 0          # webcam
-    python -m demo.run_video --model best.pt --source video.mp4 --output result.mp4
+    python -m demo.run_video --source video.mp4
+    python -m demo.run_video --model artifacts/best.pt --source 0          # webcam
+    python -m demo.run_video --model artifacts/best.pt --source video.mp4 --output result.mp4
 """
 
 import argparse
@@ -24,9 +24,12 @@ from inference.reporter import ReportGenerator, ShiftAggregator
 from inference.visualizer import SafetyVisualizer
 
 
+DEFAULT_MODEL_PATH = "artifacts/best.pt"
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Run safety detection on video.")
-    p.add_argument("--model", required=True, help="Path to YOLO weights.")
+    p.add_argument("--model", default=DEFAULT_MODEL_PATH, help="Path to YOLO weights.")
     p.add_argument("--source", required=True, help="Video path or camera index.")
     p.add_argument("--output", default=None, help="Output video path.")
     p.add_argument("--rules", default="rules/safety_rules.json")

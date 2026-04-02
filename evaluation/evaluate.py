@@ -21,7 +21,7 @@ Target Benchmarks:
   - Inference >= 15 FPS on T4 GPU
 
 Usage:
-    python evaluate.py --model best.pt --data construction_safety.yaml --device 0
+    python evaluate.py --model artifacts/best.pt --data training/construction_safety.yaml --device 0
 """
 
 import argparse
@@ -44,11 +44,13 @@ BENCHMARKS = {
     "FPS_min": 15.0,
 }
 
+DEFAULT_MODEL_PATH = "artifacts/best.pt"
+
 
 def parse_args() -> argparse.Namespace:
     """Parse evaluation arguments."""
     p = argparse.ArgumentParser(description="Evaluate construction safety model.")
-    p.add_argument("--model", type=str, required=True, help="Path to model weights.")
+    p.add_argument("--model", type=str, default=DEFAULT_MODEL_PATH, help="Path to model weights.")
     p.add_argument("--data", type=str, required=True, help="Dataset YAML path.")
     p.add_argument("--device", type=str, default="0", help="Device (0, cpu).")
     p.add_argument("--output", type=str, default="./eval_results", help="Output dir.")

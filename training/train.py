@@ -34,7 +34,7 @@ Hyperparameter Justification (per-parameter):
     100 epochs is sufficient for convergence without overfitting.
   - imgsz=640: Industry standard balancing resolution and speed; workers
     and PPE are identifiable at 640px in typical surveillance footage.
-  - batch=16: Optimal for Colab T4 (16GB VRAM) with YOLOv8-Medium;
+  - batch=8: Optimal for RTX 4060(8GB VRAM) with YOLOv8-Medium;
     larger batches cause OOM, smaller batches reduce gradient stability.
   - lr0=0.01: Standard YOLO learning rate; works well with SGD+momentum
     for fine-tuning from COCO pretrained weights.
