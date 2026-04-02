@@ -42,7 +42,7 @@ def main() -> None:
     # Load image
     frame = cv2.imread(args.image)
     if frame is None:
-        print(f"❌ Cannot read image: {args.image}")
+        print(f" Cannot read image: {args.image}")
         sys.exit(1)
     print(f"📷 Loaded image: {args.image} ({frame.shape[1]}x{frame.shape[0]})")
 
@@ -87,11 +87,11 @@ def main() -> None:
     # Save output
     if args.output:
         cv2.imwrite(args.output, annotated)
-        print(f"💾 Saved: {args.output}")
+        print(f" Saved: {args.output}")
     else:
         out = f"{Path(args.image).stem}_annotated.jpg"
         cv2.imwrite(out, annotated)
-        print(f"💾 Saved: {out}")
+        print(f" Saved: {out}")
 
     # Save JSON report
     reporter.save_json(report, f"{Path(args.image).stem}_report.json")
