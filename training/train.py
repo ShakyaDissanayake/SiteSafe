@@ -41,7 +41,7 @@ Hyperparameter Justification (per-parameter):
   - lrf=0.01: Final LR = 1% of lr0; cosine decay to near-zero prevents
     late-stage oscillation while allowing fine-grained convergence.
   - momentum=0.937: Slightly below default 0.937 promotes smoother
-    convergence for datasets with class imbalance (no_helmet is rarer).
+    convergence for datasets with class imbalance (violation classes are rarer).
   - weight_decay=0.0005: Mild L2 regularization prevents overfitting on
     the relatively small construction dataset (~3k images).
   - warmup_epochs=3: Gradual LR warmup stabilizes early training when
@@ -57,10 +57,15 @@ Usage:
 """
 
 import argparse
-import sys
+import logging
 from pathlib import Path
 
 from ultralytics import YOLO
+
+
+logger = logging.getLogger(__name__)
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_DATA_YAML = SCRIPT_DIR / "construction_safety.yaml"
 
 
 def parse_args() -> argparse.Namespace:
@@ -71,7 +76,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--data",
         type=str,
-        default="construction_safety.yaml",
+        default=str(DEFAULT_DATA_YAML),
         help="Path to dataset YAML config.",
     )
     parser.add_argument(
@@ -82,20 +87,66 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--imgsz", type=int, default=640)
-    parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--lr0", type=float, default=0.01)
     parser.add_argument("--lrf", type=float, default=0.01)
     parser.add_argument("--momentum", type=float, default=0.937)
     parser.add_argument("--weight-decay", type=float, default=0.0005)
     parser.add_argument("--warmup-epochs", type=float, default=3.0)
     parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--device", type=str, default="0")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        help="Device selection: auto, cpu, 0, 0,1, etc.",
+    )
     parser.add_argument("--project", type=str, default="safety_monitor")
     parser.add_argument("--name", type=str, default="yolov8m_construction_v1")
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument("--export", type=str, nargs="+", default=None,
                         help="Export formats after training (onnx, torchscript, etc.).")
     return parser.parse_args()
+
+
+def resolve_data_yaml(data_yaml: str) -> Path:
+    """Resolve dataset YAML path from CLI or script-relative fallback."""
+    candidate = Path(data_yaml)
+    if candidate.exists():
+        return candidate.resolve()
+
+    if not candidate.is_absolute():
+        script_relative = SCRIPT_DIR / candidate
+        if script_relative.exists():
+            logger.info("Resolved dataset YAML relative to script: %s", script_relative)
+            return script_relative.resolve()
+
+    return candidate
+
+
+def resolve_device(requested_device: str) -> str:
+    """Resolve training device with safe CPU fallback for non-CUDA hosts."""
+    requested = (requested_device or "auto").strip().lower()
+
+    try:
+        import torch
+        has_cuda = torch.cuda.is_available() and torch.cuda.device_count() > 0
+    except Exception:
+        has_cuda = False
+
+    if requested == "auto":
+        return "0" if has_cuda else "cpu"
+
+    if requested == "cpu":
+        return "cpu"
+
+    if has_cuda:
+        return requested_device
+
+    logger.warning(
+        "CUDA requested via --device=%s but no CUDA devices were detected. Falling back to CPU.",
+        requested_device,
+    )
+    return "cpu"
 
 
 def validate_dataset(data_yaml: str) -> bool:
@@ -109,39 +160,46 @@ def validate_dataset(data_yaml: str) -> bool:
     """
     yaml_path = Path(data_yaml)
     if not yaml_path.exists():
-        print(f"❌ Dataset YAML not found: {yaml_path}")
-        return False
+      logger.error("Dataset YAML not found: %s", yaml_path)
+      return False
 
     try:
-        import yaml
-        with open(yaml_path) as f:
-            config = yaml.safe_load(f)
-    except Exception as e:
-        print(f"❌ Failed to parse YAML: {e}")
-        return False
+      import yaml
+
+      with open(yaml_path, encoding="utf-8") as file_handle:
+        config = yaml.safe_load(file_handle)
+    except Exception as exc:
+      logger.error("Failed to parse dataset YAML: %s", exc)
+      return False
 
     required_keys = ["path", "train", "val", "nc", "names"]
     for key in required_keys:
-        if key not in config:
-            print(f"❌ Missing required key in YAML: {key}")
-            return False
+      if key not in config:
+        logger.error("Missing required key in dataset YAML: %s", key)
+        return False
 
     base = Path(config["path"])
     for split in ["train", "val"]:
-        split_path = base / config[split]
-        if not split_path.exists():
-            print(f"⚠️  Split directory missing: {split_path}")
-            print("    Training may still work if data is downloaded later.")
+      split_path = base / config[split]
+      if not split_path.exists():
+        logger.warning(
+          "Split directory missing: %s. Training may still work if data is prepared later.",
+          split_path,
+        )
 
     num_classes = config["nc"]
     num_names = len(config["names"])
     if num_classes != num_names:
-        print(f"❌ nc={num_classes} but {num_names} class names provided.")
-        return False
+      logger.error(
+        "Class mismatch in dataset YAML: nc=%s but %s class names provided.",
+        num_classes,
+        num_names,
+      )
+      return False
 
-    print(f"✅ Dataset YAML validated: {num_classes} classes")
+    logger.info("Dataset YAML validated: %s classes", num_classes)
     for idx, name in config["names"].items():
-        print(f"  {idx}: {name}")
+      logger.info("  %s: %s", idx, name)
     return True
 
 
@@ -151,29 +209,30 @@ def train(args: argparse.Namespace) -> None:
     Args:
         args: Parsed command-line arguments.
     """
-    # Validate dataset
-    if not validate_dataset(args.data):
-        print("\n⚠️  Dataset validation had warnings. Continuing anyway...")
+    data_yaml_path = resolve_data_yaml(args.data)
+    if not validate_dataset(str(data_yaml_path)):
+      raise FileNotFoundError(
+        f"Dataset validation failed. Provide a valid --data path. Checked: {data_yaml_path}"
+      )
 
-    # Load model
+    selected_device = resolve_device(args.device)
+
+    # Initialize model from checkpoint or pretrained weights.
     if args.resume:
-        print(f"\n🔄 Resuming training from: {args.resume}")
+        logger.info("Resuming training from checkpoint: %s", args.resume)
         model = YOLO(args.resume)
     else:
-        print(f"\n📦 Loading pretrained model: {args.model}")
+        logger.info("Loading pretrained model: %s", args.model)
         model = YOLO(args.model)
 
-    # Train
-    print("\n🚀 Starting training...")
-    print(f"  Epochs: {args.epochs}")
-    print(f"  Image size: {args.imgsz}")
-    print(f"  Batch size: {args.batch}")
-    print(f"  Learning rate: {args.lr0} → {args.lr0 * args.lrf}")
-    print(f"  Device: {args.device}")
-    print(f"  Project: {args.project}/{args.name}")
+    # Run training.
+    logger.info("Starting training")
+    logger.info("Training configuration: epochs=%s, imgsz=%s, batch=%s", args.epochs, args.imgsz, args.batch)
+    logger.info("Learning rate schedule: initial=%s final=%s", args.lr0, args.lr0 * args.lrf)
+    logger.info("Execution target: device=%s, run=%s/%s", selected_device, args.project, args.name)
 
-    results = model.train(
-        data=args.data,
+    model.train(
+        data=str(data_yaml_path),
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
@@ -183,7 +242,7 @@ def train(args: argparse.Namespace) -> None:
         weight_decay=args.weight_decay,
         warmup_epochs=args.warmup_epochs,
         patience=args.patience,
-        device=args.device,
+        device=selected_device,
         project=args.project,
         name=args.name,
         exist_ok=True,
@@ -192,25 +251,28 @@ def train(args: argparse.Namespace) -> None:
         save_period=10,
     )
 
-    # Post-training evaluation
-    print("\n📊 Running final evaluation on validation set...")
+    # Run post-training evaluation on validation split.
+    logger.info("Running final evaluation on validation set")
     metrics = model.val()
-    print(f"  mAP@0.5:      {metrics.box.map50:.4f}")
-    print(f"  mAP@0.5:0.95: {metrics.box.map:.4f}")
+    logger.info("Validation metrics: mAP@0.5=%.4f, mAP@0.5:0.95=%.4f", metrics.box.map50, metrics.box.map)
 
-    # Export if requested
+    # Export model artifacts if requested.
     if args.export:
         for fmt in args.export:
-            print(f"\n📤 Exporting model to {fmt}...")
+            logger.info("Exporting model in format: %s", fmt)
             model.export(format=fmt)
 
-    print("\n✅ Training complete!")
-    print(f"  Best weights: {args.project}/{args.name}/weights/best.pt")
-    print(f"  Last weights: {args.project}/{args.name}/weights/last.pt")
+    logger.info("Training complete")
+    logger.info("Best weights: %s/%s/weights/best.pt", args.project, args.name)
+    logger.info("Last weights: %s/%s/weights/last.pt", args.project, args.name)
 
 
 def main() -> None:
     """Entry point."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     args = parse_args()
     train(args)
 

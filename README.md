@@ -1,6 +1,6 @@
 # 🏗️ Construction Site Safety Monitoring System
 
-Real-time computer vision pipeline for detecting PPE compliance, hazardous conditions,
+Real-time computer vision pipeline for detecting PPE compliance
 and safety rule violations on construction sites using YOLOv8.
 
 ## Architecture
@@ -8,7 +8,7 @@ and safety rule violations on construction sites using YOLOv8.
 ```
 ┌──────────────┐    ┌───────────────┐    ┌──────────────────┐    ┌──────────────┐
 │  Video/Image │───▶│  SafetyDetect │───▶│  ComplianceEngine │───▶│ ReportGen    │
-│    Input     │    │  (YOLOv8)     │    │  (10 Rules)       │    │ JSON/CSV/HTML│
+│    Input     │    │  (YOLOv8)     │    │  (8 PPE Rules)    │    │ JSON/CSV/HTML│
 └──────────────┘    └───────┬───────┘    └────────┬─────────┘    └──────────────┘
                             │                     │
                     ┌───────▼───────┐    ┌────────▼─────────┐
@@ -18,9 +18,9 @@ and safety rule violations on construction sites using YOLOv8.
 
 Pipeline Flow:
   1. Frame ingestion + low-light preprocessing (CLAHE)
-  2. YOLOv8 detection → workers, PPE items, machinery, danger zones
+  2. YOLOv8 detection → Person + PPE and no-PPE classes
   3. Spatial PPE-to-worker association (1.3× expanded bbox containment)
-  4. Rule engine evaluation (10 rules × each worker)
+  4. Rule engine evaluation (dataset-aligned PPE compliance rules)
   5. Compliance report + annotated visualization
 ```
 
@@ -28,29 +28,30 @@ Pipeline Flow:
 
 | Rule ID | Rule Name | Severity | Zone | OSHA Ref |
 |---------|-----------|----------|------|----------|
-| PPE-001 | Hard Hat Required | 🔴 CRITICAL | ALL | 29 CFR 1926.100 |
-| PPE-002 | High-Vis Vest Required | 🟠 HIGH | ACTIVE_ZONE | 29 CFR 1926.201 |
-| PPE-003 | Safety Harness at Height | 🔴 CRITICAL | HEIGHT_ZONE | 29 CFR 1926.502 |
-| PPE-004 | Improper Helmet Usage | 🟠 HIGH | ALL | 29 CFR 1926.100(b) |
-| PPE-005 | Improperly Worn Vest | 🟡 MEDIUM | ACTIVE_ZONE | ANSI/ISEA 107-2020 |
-| PPE-006 | Complete PPE Ensemble | 🟠 HIGH | ACTIVE_ZONE | 29 CFR 1926.28(a) |
-| PROX-001 | Machinery Proximity | 🔴 CRITICAL | MACHINERY_ZONE | 29 CFR 1926.600 |
-| POST-001 | Fall Risk Posture | 🟠 HIGH | HEIGHT_ZONE | 29 CFR 1926.501 |
-| SCENE-001 | Danger Zone Entry | 🔴 CRITICAL | ALL | 29 CFR 1926.200 |
-| ENV-001 | Low Visibility Conditions | 🔴 CRITICAL | ALL | 29 CFR 1926.56 |
+| PPE-001 | Helmet Required | 🔴 CRITICAL | ALL | 29 CFR 1926.100 |
+| PPE-002 | Gloves Required | 🟠 HIGH | ALL | - |
+| PPE-003 | High-Vis Vest Required | 🟠 HIGH | ALL | 29 CFR 1926.201 |
+| PPE-004 | Safety Boots Required | 🟠 HIGH | ALL | - |
+| PPE-005 | Goggles Required | 🟠 HIGH | ALL | - |
+| PPE-006 | Complete PPE Ensemble | 🔴 CRITICAL | ACTIVE_ZONE | 29 CFR 1926.28(a) |
+| PPE-007 | None-Class PPE Violation | 🔴 CRITICAL | ALL | - |
+| ENV-001 | Low Visibility Vest Escalation | 🔴 CRITICAL | ALL | 29 CFR 1926.56 |
 
 ## Detection Classes
 
 | ID | Class | Description |
 |----|-------|-------------|
-| 0 | `worker` | Any person on site |
-| 1 | `helmet` | Hard hat worn on head |
-| 2 | `no_helmet` | Head visible without helmet |
-| 3 | `vest` | Hi-vis vest on torso |
-| 4 | `no_vest` | Torso without hi-vis vest |
-| 5 | `harness` | Full-body safety harness |
-| 6 | `machinery` | Heavy equipment |
-| 7 | `danger_zone` | Marked hazardous area |
+| 0 | `helmet` | Helmet detected |
+| 1 | `gloves` | Gloves detected |
+| 2 | `vest` | High-visibility vest detected |
+| 3 | `boots` | Safety boots detected |
+| 4 | `goggles` | Eye protection detected |
+| 5 | `none` | Explicit no-PPE class |
+| 6 | `Person` | Worker/person class |
+| 7 | `no_helmet` | Missing helmet label |
+| 8 | `no_goggle` | Missing goggles label |
+| 9 | `no_gloves` | Missing gloves label |
+| 10 | `no_boots` | Missing boots label |
 
 ## Prerequisites
 
@@ -86,7 +87,7 @@ python -m demo.run_video --model best.pt --source video.mp4 --output result.mp4
 
 ### 1. Prepare Dataset
 
-Collect or download a construction safety dataset with the 8 classes above.
+Use the Construction-PPE dataset schema with the 11 classes above.
 Recommended sources:
 
 | Dataset | Images | Format | URL |
@@ -162,27 +163,19 @@ construction_safety_monitor/
 │   └── Construction_Safety_Training.ipynb  # Full Colab notebook
 └── tests/
     ├── test_detector.py             # BBox + association tests
-    ├── test_compliance.py           # All 10 rule tests
+    ├── test_compliance.py           # PPE rule tests
     └── test_reporter.py             # Report format tests
 ```
 
 ## Known Limitations
 
-1. **No true pose estimation**: Fall-risk detection (POST-001) uses bbox aspect ratio as a proxy heuristic. A dedicated pose model (YOLOv8-pose, MediaPipe) would be far more accurate for posture anomaly detection.
+1. **No temporal tracking in image mode**: Single-frame inference cannot keep worker IDs across time. Video mode would benefit from ByteTrack or BoT-SORT.
 
-2. **Attribute classification requires secondary model**: Detecting whether a helmet is worn *properly* (PPE-004) or a vest is *fastened* (PPE-005) requires the optional MobileNetV3 classifier head which is not included in the base YOLO detection.
+2. **Low-light uncertainty remains**: CLAHE helps, but very dark frames still degrade PPE attribute reliability.
 
-3. **No temporal tracking in image mode**: Single-frame inference cannot track worker IDs across time. Video mode would benefit from ByteTrack or BoT-SORT integration for persistent worker tracking and temporal violation smoothing.
+3. **Class imbalance exists**: Rare classes (for example `no_boots`) have fewer samples and may produce unstable precision/recall.
 
-4. **Distance/depth estimation is approximate**: The system cannot measure true physical distance to machinery (PROX-001) from a single monocular camera. Proximity is estimated from bounding box center distances normalized by frame diagonal — this is a rough approximation.
-
-5. **Zone detection is semi-manual**: Height zones and danger zones rely on either manual polygon configuration per camera or detection of visual cues (scaffolding, barriers). The system cannot determine absolute height from monocular images without additional calibration.
-
-6. **Night/low-light performance degrades**: While CLAHE preprocessing improves low-light detection, accuracy drops significantly below ~40 lux. Infrared or thermal cameras would be needed for reliable night-shift monitoring.
-
-7. **Class imbalance in real-world data**: `harness` and `danger_zone` classes are typically underrepresented in available datasets, leading to lower per-class AP for these categories.
-
-8. **No hardhat color/type classification**: The system detects helmet presence but does not classify helmet type (standard, full-brim, bump cap) or color coding used for role identification on many sites.
+4. **No fine-grained PPE quality checks**: The current model checks PPE presence/absence, not whether equipment is worn correctly or fastened.
 
 ## Future Work Roadmap
 

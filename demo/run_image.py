@@ -52,8 +52,9 @@ def main() -> None:
     # Run detection
     print("🔍 Running detection...")
     result = detector.detect(frame)
-    print(f"  Found: {len(result.workers)} workers, {len(result.ppe_items)} PPE items, "
-          f"{len(result.machinery)} machinery, {len(result.danger_zones)} danger zones")
+    print(
+        f"  Found: {len(result.workers)} persons and {len(result.ppe_items)} PPE/no-PPE detections"
+    )
 
     # Associate PPE to workers
     worker_states = detector.associate_ppe_to_workers(

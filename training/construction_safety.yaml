@@ -1,46 +1,22 @@
-# Construction Safety Dataset Configuration
-# ──────────────────────────────────────────
-# YOLOv8 dataset YAML for construction site safety monitoring.
-# 8 classes covering workers, PPE items, machinery, and danger zones.
-#
-# Directory structure expected:
-#   {path}/
-#   ├── images/
-#   │   ├── train/
-#   │   ├── val/
-#   │   └── test/
-#   └── labels/
-#       ├── train/
-#       ├── val/
-#       └── test/
+# Construction-PPE Dataset Configuration
+# Matches data/raw/data.yaml class schema
 
-path: /content/construction_safety  # Google Colab mount path (override for local)
+path: data/raw
 train: images/train
 val: images/val
 test: images/test
 
-# Number of classes
-nc: 8
+nc: 11
 
-# Class names — order matches class IDs 0–7
 names:
-  0: worker
-  1: helmet
-  2: no_helmet
-  3: vest
-  4: no_vest
-  5: harness
-  6: machinery
-  7: danger_zone
-
-# ──────────────────────────────────────────
-# Class Descriptions (informational, not parsed by YOLO)
-# ──────────────────────────────────────────
-# worker       — Any person on the construction site regardless of role
-# helmet       — Safety hard hat properly worn on a worker's head
-# no_helmet    — Worker's head visible without a safety helmet
-# vest         — High-visibility vest/jacket worn on the torso
-# no_vest      — Worker's torso visible without a hi-vis vest
-# harness      — Full-body safety harness visible on worker
-# machinery    — Heavy construction equipment (cranes, excavators, forklifts)
-# danger_zone  — Marked hazardous area (barriers, caution tape, warning signs)
+  0: helmet
+  1: gloves
+  2: vest
+  3: boots
+  4: goggles
+  5: none
+  6: Person
+  7: no_helmet
+  8: no_goggle
+  9: no_gloves
+  10: no_boots

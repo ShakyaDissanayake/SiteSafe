@@ -1,7 +1,8 @@
 # ─── Core ML ─────────────────────────────────────────
 ultralytics>=8.1.0
-torch>=2.0.0
-torchvision>=0.15.0
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch
+torchvision
 
 # ─── Image Processing ────────────────────────────────
 opencv-python>=4.8.0
@@ -16,12 +17,12 @@ supervision>=0.17.0
 matplotlib>=3.7.0
 
 # ─── Dataset Management ─────────────────────────────
-roboflow>=0.2.0
+# NOTE:
+#   With uv + CUDA index, roboflow can trigger idna resolution conflicts
+#   under secure index strategy. Install it separately from PyPI if needed:
+#   uv pip install roboflow --index-url https://pypi.org/simple
+# roboflow>=0.2.0
 pyyaml>=6.0
 
 # ─── Testing ─────────────────────────────────────────
 pytest>=7.4.0
-
-# ─── Optional: Colab / Notebook ─────────────────────
-# ipywidgets>=8.0.0
-# jupyter>=1.0.0

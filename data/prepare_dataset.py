@@ -39,26 +39,32 @@ from PIL import Image
 
 # ── Class Mapping (must match construction_safety.yaml) ──────────────────
 CLASS_NAMES = {
-    0: "worker",
-    1: "helmet",
-    2: "no_helmet",
-    3: "vest",
-    4: "no_vest",
-    5: "harness",
-    6: "machinery",
-    7: "danger_zone",
+    0: "helmet",
+    1: "gloves",
+    2: "vest",
+    3: "boots",
+    4: "goggles",
+    5: "none",
+    6: "Person",
+    7: "no_helmet",
+    8: "no_goggle",
+    9: "no_gloves",
+    10: "no_boots",
 }
 
 # Colors for each class (RGBA)
 CLASS_COLORS = {
-    0: "#4A90D9",  # worker — blue
-    1: "#27AE60",  # helmet — green
-    2: "#E74C3C",  # no_helmet — red
-    3: "#2ECC71",  # vest — light green
-    4: "#E67E22",  # no_vest — orange
-    5: "#9B59B6",  # harness — purple
-    6: "#F39C12",  # machinery — amber
-    7: "#E91E63",  # danger_zone — pink
+    0: "#27AE60",   # helmet
+    1: "#3498DB",   # gloves
+    2: "#2ECC71",   # vest
+    3: "#8E44AD",   # boots
+    4: "#1ABC9C",   # goggles
+    5: "#7F8C8D",   # none
+    6: "#4A90D9",   # Person
+    7: "#E74C3C",   # no_helmet
+    8: "#D35400",   # no_goggle
+    9: "#C0392B",   # no_gloves
+    10: "#922B21",  # no_boots
 }
 
 

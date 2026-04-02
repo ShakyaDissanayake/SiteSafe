@@ -35,10 +35,8 @@ PPE_EXPANSION_FACTOR = 0.30    # Enlarge worker bbox by 30% for PPE association
 MACHINERY_PROXIMITY_RATIO = 0.25  # Max center distance ratio for proximity check
 
 # Class IDs matching construction_safety.yaml
-_WORKER_ID = 0
-_PPE_CLASS_IDS = {1, 2, 3, 4, 5}  # helmet, no_helmet, vest, no_vest, harness
-_MACHINERY_ID = 6
-_DANGER_ZONE_ID = 7
+_PERSON_ID = 6
+_PPE_CLASS_IDS = {0, 1, 2, 3, 4, 5, 7, 8, 9, 10}
 
 
 class SafetyDetector:
@@ -107,14 +105,10 @@ class SafetyDetector:
 
         # Partition into categories
         for det in raw:
-            if det.class_id == _WORKER_ID:
+            if det.class_id == _PERSON_ID:
                 result.workers.append(det)
             elif det.class_id in _PPE_CLASS_IDS:
                 result.ppe_items.append(det)
-            elif det.class_id == _MACHINERY_ID:
-                result.machinery.append(det)
-            elif det.class_id == _DANGER_ZONE_ID:
-                result.danger_zones.append(det)
 
         return result
 
@@ -309,25 +303,47 @@ class SafetyDetector:
                 state.helmet_confidence = max(
                     state.helmet_confidence, ppe.confidence
                 )
-            elif cls == DetectionClass.NO_HELMET.value:
-                state.has_helmet = False
-                state.helmet_confidence = max(
-                    state.helmet_confidence, ppe.confidence
+            elif cls == DetectionClass.GLOVES.value:
+                state.has_gloves = True
+                state.gloves_confidence = max(
+                    state.gloves_confidence, ppe.confidence
                 )
             elif cls == DetectionClass.VEST.value:
                 state.has_vest = True
                 state.vest_confidence = max(
                     state.vest_confidence, ppe.confidence
                 )
-            elif cls == DetectionClass.NO_VEST.value:
-                state.has_vest = False
-                state.vest_confidence = max(
-                    state.vest_confidence, ppe.confidence
+            elif cls == DetectionClass.BOOTS.value:
+                state.has_boots = True
+                state.boots_confidence = max(
+                    state.boots_confidence, ppe.confidence
                 )
-            elif cls == DetectionClass.HARNESS.value:
-                state.has_harness = True
-                state.harness_confidence = max(
-                    state.harness_confidence, ppe.confidence
+            elif cls == DetectionClass.GOGGLES.value:
+                state.has_goggles = True
+                state.goggles_confidence = max(
+                    state.goggles_confidence, ppe.confidence
+                )
+            elif cls == DetectionClass.NONE.value:
+                state.none_class_detected = True
+            elif cls == DetectionClass.NO_HELMET.value:
+                state.has_helmet = False
+                state.helmet_confidence = max(
+                    state.helmet_confidence, ppe.confidence
+                )
+            elif cls == DetectionClass.NO_GLOVES.value:
+                state.has_gloves = False
+                state.gloves_confidence = max(
+                    state.gloves_confidence, ppe.confidence
+                )
+            elif cls == DetectionClass.NO_BOOTS.value:
+                state.has_boots = False
+                state.boots_confidence = max(
+                    state.boots_confidence, ppe.confidence
+                )
+            elif cls == DetectionClass.NO_GOGGLE.value:
+                state.has_goggles = False
+                state.goggles_confidence = max(
+                    state.goggles_confidence, ppe.confidence
                 )
 
     @staticmethod

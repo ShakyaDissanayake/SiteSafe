@@ -45,15 +45,18 @@ class SceneVerdict(str, Enum):
 
 
 class DetectionClass(str, Enum):
-    """Detection classes aligned with the YOLO training config."""
-    WORKER = "worker"
+    """Detection classes aligned with the Construction-PPE dataset."""
+    PERSON = "Person"
     HELMET = "helmet"
-    NO_HELMET = "no_helmet"
+    GLOVES = "gloves"
     VEST = "vest"
-    NO_VEST = "no_vest"
-    HARNESS = "harness"
-    MACHINERY = "machinery"
-    DANGER_ZONE = "danger_zone"
+    BOOTS = "boots"
+    GOGGLES = "goggles"
+    NONE = "none"
+    NO_HELMET = "no_helmet"
+    NO_GOGGLE = "no_goggle"
+    NO_GLOVES = "no_gloves"
+    NO_BOOTS = "no_boots"
 
 
 # ---------------------------------------------------------------------------
@@ -147,13 +150,21 @@ class WorkerPPEState:
     worker_bbox: BBox
     worker_confidence: float
     has_helmet: bool = False
+    has_gloves: bool = False
     has_vest: bool = False
-    has_harness: bool = False
+    has_boots: bool = False
+    has_goggles: bool = False
+    none_class_detected: bool = False
     helmet_confidence: float = 0.0
+    gloves_confidence: float = 0.0
     vest_confidence: float = 0.0
-    harness_confidence: float = 0.0
+    boots_confidence: float = 0.0
+    goggles_confidence: float = 0.0
     helmet_proper: Optional[bool] = None
+    gloves_proper: Optional[bool] = None
     vest_proper: Optional[bool] = None
+    boots_proper: Optional[bool] = None
+    goggles_proper: Optional[bool] = None
     near_machinery: bool = False
     in_height_zone: bool = False
     in_danger_zone: bool = False
