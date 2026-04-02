@@ -28,7 +28,7 @@ from inference import (
 )
 
 
-# ── Color Constants (BGR for OpenCV) ─────────────────────────────────────
+
 COLOR_SAFE = (39, 174, 96)        # Green
 COLOR_VIOLATION = (60, 76, 231)   # Red
 COLOR_LOW_CONF = (0, 215, 255)    # Yellow

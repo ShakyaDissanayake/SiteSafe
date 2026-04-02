@@ -27,7 +27,7 @@ from inference import (
 )
 
 
-# ── Constants ────────────────────────────────────────────────────────────
+
 LOW_LIGHT_THRESHOLD = 60       # Mean brightness below this triggers CLAHE
 DISTANT_WORKER_HEIGHT_PX = 30  # Workers shorter than this skip attribute checks
 OCCLUSION_THRESHOLD = 0.50     # IoU overlap ratio suggesting occlusion
@@ -162,7 +162,7 @@ class SafetyDetector:
 
         return states
 
-    # ── Private Methods ──────────────────────────────────────────────
+   
 
     def _preprocess(
         self, frame: np.ndarray
