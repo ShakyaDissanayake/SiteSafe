@@ -27,7 +27,6 @@ Thumbs.db
 desktop.ini
 
 # ─── ML Artifacts ────────────────────────────────────
-*.pt
 *.onnx
 *.engine
 *.tflite
