@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 import cv2
+import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -29,15 +30,46 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", default=None, help="Output video path.")
     p.add_argument("--rules", default="rules/safety_rules.json")
     p.add_argument("--conf", type=float, default=0.45)
-    p.add_argument("--device", type=str, default="auto")
+    p.add_argument(
+        "--device",
+        type=str,
+        default="cpu",
+        help="Inference device. Use 'cpu' for stability or explicit CUDA device like '0'.",
+    )
     p.add_argument("--max-frames", type=int, default=0, help="Max frames (0=all).")
     p.add_argument("--skip-frames", type=int, default=1, help="Process every Nth frame.")
     p.add_argument("--no-display", action="store_true")
     return p.parse_args()
 
 
+def resolve_device(requested_device: str) -> str:
+    """Resolve runtime device with CPU-first default behavior.
+
+    Args:
+        requested_device: User-provided device string.
+
+    Returns:
+        Safe device string for YOLO inference.
+    """
+    device = (requested_device or "cpu").strip().lower()
+    if device in {"", "auto"}:
+        return "cpu"
+
+    if device == "cpu":
+        return "cpu"
+
+    if not torch.cuda.is_available():
+        print(
+            f"WARNING: CUDA device '{requested_device}' requested but CUDA is unavailable. Falling back to CPU."
+        )
+        return "cpu"
+
+    return requested_device
+
+
 def main() -> None:
     args = parse_args()
+    device = resolve_device(args.device)
 
     # Open video source
     source = int(args.source) if args.source.isdigit() else args.source
@@ -53,7 +85,7 @@ def main() -> None:
     print(f"📹 Source: {args.source} ({w}x{h} @ {fps_in:.1f} FPS, {total} frames)")
 
     # Init pipeline
-    detector = SafetyDetector(args.model, confidence_threshold=args.conf, device=args.device)
+    detector = SafetyDetector(args.model, confidence_threshold=args.conf, device=device)
     engine = ComplianceEngine.from_json(args.rules)
     reporter = ReportGenerator()
     visualizer = SafetyVisualizer()
