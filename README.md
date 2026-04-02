@@ -11,7 +11,7 @@
 ## 🎯 The Core Question: Is this situation safe or unsafe?
 
 SiteSafe answers this by breaking the problem into four continuous stages:
-1. **Worker Detection:** Locating individuals (`Person` class) within the frame.
+1. **Worker Detection:** Locating individuals within the frame.
 2. **PPE Recognition:** Detecting 10 distinct classes of PPE presence and absence (helmets, vests, gloves, etc.).
 3. **Compliance Check:** Spatially associating PPE to workers and checking a decoupled JSON rule engine.
 4. **Violation Flagging:** Emitting real-time visual alerts and generating structured compliance reports.
@@ -20,9 +20,22 @@ SiteSafe answers this by breaking the problem into four continuous stages:
 
 ## 📚 Dataset Documentation & Curation
 
-*Note: Please update the exact dataset numbers based on your final custom data distribution.*
+This project utilizes the [Ultralytics Construction-PPE Dataset](https://docs.ultralytics.com/datasets/detect/construction-ppe/), a comprehensive dataset specifically formulated for safety monitoring in construction environments. It provides high-quality images with bounding box annotations for workers and their protective equipment.
 
-To ensure robustness across varied real-world environments, this model was trained on a **custom dataset** extending a baseline 11-class Construction-PPE schema. 
+To ensure robustness across varied real-world environments, this model was trained on a **custom dataset** extending this baseline 11-class Construction-PPE schema. We significantly enriched the dataset by:
+1. **Extracting Video Frames:** Using Python to sample frames from real-world construction site videos sourced from YouTube.
+2. **Synthetic Data Generation:** Incorporating synthetic construction scenarios generated via Nano Banana.
+
+<table>
+  <tr>
+    <td align="center"><img src="images/image.png" alt="YouTube Extracted Frame" width="100%"/></td>
+    <td align="center"><img src="images/synthetic.png" alt="Synthetic Data Example" width="100%"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Example of a frame extracted from YouTube footage.</em></td>
+    <td align="center"><em>Example of synthetic training data generated using Nano Banana.</em></td>
+  </tr>
+</table>
 
 - **Varied Environments:** Includes scaffolding, indoor warehouses, and open-air active zones.
 - **Lighting Conditions:** Augmented and curated to include overcast shadows and harsh sunlight.
@@ -30,7 +43,7 @@ To ensure robustness across varied real-world environments, this model was train
   - `Person`
   - **Present:** `helmet`, `gloves`, `vest`, `boots`, `goggles`
   - **Missing Signals:** `no_helmet`, `no_gloves`, `no_boots`, `no_goggle`, `none`
-- **Annotation Strategy:** Bounding boxes carefully drawn around both the workers and individual PPE items to enable spatial association during inference.
+- **Annotation Strategy:** All custom images, including extracted and synthetic frames, were manually annotated using [Roboflow](https://roboflow.com/). Bounding boxes were carefully drawn around both the workers and individual PPE items to enable spatial association during inference.
 
 ---
 
@@ -75,7 +88,7 @@ pip install -r requirements.txt
 ### Running Inference
 **Image Inference:**
 ```bash
-python -m demo.run_image --image data/raw/images/test/image1.txt --no-display
+python -m demo.run_image --image data/raw/images/test/image1.jpg --no-display
 ```
 
 **Video Inference:**
@@ -116,5 +129,14 @@ python evaluation/evaluate.py --data training/construction_safety.yaml
 
 ---
 
-## 📄 License
+## � Future Directions
+
+1. **TensorRT Optimization:** Export the YOLO model to TensorRT to maximize inference speed and optimize for edge compute.
+2. **Edge Deployment:** Deploy the pipeline directly onto edge AI hardware such as the NVIDIA Jetson Xavier or NVIDIA Jetson Orin for decentralized, on-site processing.
+3. **Multi-Camera Live Inferencing:** Scale the system to ingest and process live video feeds from multiple surveillance cameras deployed across the construction site.
+4. **Automated Alerting Systems:** Implement physical and digital flagging mechanisms, such as activating site sirens for immediate critical interventions and automatically emailing structured reports to safety officers.
+
+---
+
+## �📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
