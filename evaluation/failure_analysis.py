@@ -202,7 +202,7 @@ def main() -> None:
                              args.conf, args.iou_match, args.top_k)
     print(f"Found {len(fps)} false positives, {len(fns)} false negatives")
     report_path = generate_html_report(fps, fns, out)
-    print(f"✅ HTML report saved: {report_path}")
+    print(f" HTML report saved: {report_path}")
 
 
 if __name__ == "__main__":
